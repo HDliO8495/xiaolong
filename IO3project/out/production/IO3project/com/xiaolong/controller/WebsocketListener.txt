@@ -1,0 +1,111 @@
+package com.xiaolong.controller;
+
+/**
+ * Created by xiaolong on 2017/12/6.
+ */
+import java.io.IOException;
+import java.util.Iterator;
+import java.util.concurrent.ConcurrentLinkedQueue;
+
+import javax.servlet.ServletContextEvent;
+import javax.servlet.ServletContextListener;
+
+import org.springframework.context.annotation.Configuration;
+import org.springframework.web.socket.CloseStatus;
+import org.springframework.web.socket.TextMessage;
+import org.springframework.web.socket.WebSocketSession;
+import org.springframework.web.socket.config.annotation.EnableWebSocket;
+import org.springframework.web.socket.config.annotation.WebSocketConfigurer;
+import org.springframework.web.socket.config.annotation.WebSocketHandlerRegistry;
+import org.springframework.web.socket.handler.TextWebSocketHandler;
+
+//@Configuration
+//@EnableWebSocket
+public class WebsocketListener implements WebSocketConfigurer, ServletContextListener{
+
+    private ConcurrentLinkedQueue<WebSocketSession> sessions  = new ConcurrentLinkedQueue<WebSocketSession>();
+
+    private WebSocketHandlerTest handler;
+
+
+    @Override
+    public void contextDestroyed(ServletContextEvent arg0) {
+        // TODO Auto-generated method stub
+    }
+
+    @Override
+    public void contextInitialized(ServletContextEvent arg0) {
+        // TODO Auto-generated method stub
+
+    }
+
+    @Override
+    public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
+        handler = new WebSocketHandlerTest();
+        registry.addHandler(handler, "/ws/notifymessage");
+        registry.addHandler(handler, "/ws/sockjs/notifymessage").withSockJS();
+        new Thread(handler).start();
+    }
+
+    class  WebSocketHandlerTest extends TextWebSocketHandler implements Runnable{
+
+        @Override
+        public void afterConnectionClosed(WebSocketSession session, CloseStatus status) throws Exception {
+            sessions.remove(session);
+        }
+
+        @Override
+        public void afterConnectionEstablished(WebSocketSession session) throws Exception {
+            sessions.add(session);
+        }
+
+        @Override
+        protected void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
+            super.handleTextMessage(session, message);
+        }
+
+        @Override
+        public void run() {
+            System.out.println("等待推送....");
+            try {
+                int i = 0;
+                for (;;) {
+                    synchronized (this) {
+                        try {
+                            Thread.sleep(3000);
+                        } catch (InterruptedException e) {
+                            // TODO Auto-generated catch block
+                            e.printStackTrace();
+                        }
+                    }
+                    if(i%10==0){
+                        nofity("消息推送测试......");
+                        System.out.println("推送消息了....");
+                    }else{
+                        System.out.println("本次不推送消息了....");
+                    }
+                    i++;
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+                System.out.println("失败....");
+            }
+        }
+
+        private void nofity(String message) throws IOException {
+            Iterator<WebSocketSession> iterator = sessions.iterator();
+            while (iterator.hasNext()) {
+                WebSocketSession session = iterator.next();
+                synchronized(session){
+                    if(session.isOpen()){
+                        session.sendMessage(new TextMessage(message));
+                    }else{
+                        iterator.remove();
+                    }
+                }
+            }
+        }
+
+    }
+
+}

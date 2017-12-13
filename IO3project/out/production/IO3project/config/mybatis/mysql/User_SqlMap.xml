@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="config.mybatis.mysql.User_SqlMap">
+    <resultMap id="UserResultMap" type="com.xiaolong.domain.User" >
+        <id column="id" property="id" jdbcType="INTEGER" />
+        <result column="user_name" property="userName" jdbcType="VARCHAR" />
+        <result column="user_pass" property="userPass" jdbcType="VARCHAR" />
+        <result column="user_age" property="userAge" jdbcType="VARCHAR" />
+        <result column="user_address" property="userAddress" jdbcType="VARCHAR" />
+    </resultMap>
+
+    <select id="selectUserByID" resultMap="UserResultMap">
+        select * from user
+    </select>
+
+    <select id="selectUser" resultType="com.xiaolong.domain.User" parameterType="com.xiaolong.domain.User">
+        select * from user u where u.user_name = #{userName} and u.user_pass = #{userPass}
+    </select>
+
+</mapper>
